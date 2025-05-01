@@ -1,0 +1,191 @@
+import random
+from math import gcd
+# Efficient modular exponentiation using binary method
+def ModExp(m, e, N):
+ 
+a = bin(e)[2:] # Convert e to binary
+ 
+r = 1
+ 
+t = m
+ 
+for i in range(len(a) - 1, -1, -1):
+ 
+if a[i] == '1':
+ 
+r = (r * t) % N
+ 
+t = (t * t) % N
+ 
+return r
+# Check if number is prime
+def is_prime(n):
+ 
+if n < 2:
+ 
+return False
+ 
+for i in range(2, int(n ** 0.5) + 1):
+ 
+if n % i == 0:
+ 
+return False
+ 
+return True
+#My code generates primes within a range
+#Could load primes from a file like the pseudocode
+#unocmment the next two lines to load primes from a file and replace large_prime
+#def load_primes(primes.txt):
+# with open(primes.txt, 'r') as file:
+# 
+primes = [int(line.strip()) for line in file]
+# 
+return primes
+# Generate a random prime within a given range
+def large_prime(start=100, end=500):
+ 
+while True:
+ 
+num = random.randint(start, end)
+ 
+if is_prime(num):
+ 
+return num
+# Extended Euclidean Algorithm to find gcd and coefficients (used for modular inverse)
+def extended_euclidean(a, b):
+ 
+old_r, r = a, b
+ 
+old_s, s = 1, 0
+ 
+old_t, t = 0, 1
+ 
+ 
+while r != 0:
+ 
+quotient = old_r // r # Get how many times r fits into old_r
+ 
+old_r, r = r, old_r - quotient * r # Update remainder
+ 
+old_s, s = s, old_s - quotient * s # Adjust coefficient s
+ 
+old_t, t = t, old_t - quotient * t # Adjust coefficient t
+ 
+ 
+return old_r, old_s, old_t # Returns gcd and coefficients
+# Find modular inverse using Extended Euclidean Algorithm
+def mod_inverse(e, phi):
+ 
+g, x, _ = extended_euclidean(e, phi)
+ 
+if g != 1:
+ 
+raise ValueError("No modular inverse exists.") # e and phi must be coprime
+ 
+return x % phi # Result is positive
+# Least common multiple
+def lcm(a, b):
+ 
+return abs(a * b) // gcd(a, b)
+# Generate keys
+def generate_keys():
+ 
+# Uncomment the following lines to use preloaded primes
+ 
+# primes = load_primes("primes.txt")
+ 
+# p = random.choice(primes)
+ 
+# q = random.choice(primes)
+ 
+p = large_prime()
+ 
+q = large_prime()
+ 
+while p == q:
+ 
+q = large_prime()
+ 
+N = p * q # Multiply to get the modulus
+ 
+lambda_n = lcm(p - 1, q - 1) # lcm of (p-1)(q-1)
+ 
+e = random.randint(2, lambda_n - 1) # Random public exponent
+ 
+while gcd(e, lambda_n) != 1: # Make sure e is coprime to lambda_n
+ 
+e = random.randint(2, lambda_n - 1)
+ 
+k = mod_inverse(e, lambda_n) 
+# Find private key exponent
+ 
+return (N, e), (N, k) # Return public and private keys
+
+# Encrypt message using RSA
+def encrypt(message, pub_key):
+ 
+N, e = pub_key
+ 
+encrypted_steps = [] # Keeps track of steps mainly was for debugging
+ 
+encrypted_message = []
+ 
+for char in message:
+ 
+char_value = ord(char) 
+# value of the character
+ 
+encrypted_value = ModExp(char_value, e, N) # Encrypt using modular exponentiation
+ 
+encrypted_steps.append(f"'{char}' -> {char_value}^({e}) mod {N} = {encrypted_value}")
+ 
+#'_' -> _^(_) mod _ = _
+ 
+#shows step
+ 
+encrypted_message.append(encrypted_value)
+ 
+print("\nEncryption steps:")
+ 
+print("\n".join(encrypted_steps)) # Encryption steps
+ 
+return encrypted_message
+# Decrypt message
+def decrypt(ciphertext, priv_key):
+ 
+N, k = priv_key
+ 
+decrypted_steps = [] 
+# Debugging, decryption steps
+ 
+decrypted_message = []
+ 
+for val in ciphertext:
+ 
+decrypted_char = chr(ModExp(val, k, N)) # Reverse encryption gets to original char
+ 
+decrypted_steps.append(f"{val}^({k}) mod {N} = {ord(decrypted_char)} -> '{decrypted_char}'")
+ 
+#'_' -> _^(_) mod _ = _
+ 
+#shows step
+ 
+decrypted_message.append(decrypted_char)
+ 
+print("\nDecryption steps:")
+ 
+print("\n".join(decrypted_steps)) # Decryption steps
+ 
+return ''.join(decrypted_message)
+# RSA Demo
+# Generate keys before
+public_key, private_key = generate_keys()
+print("Public Key:", public_key)
+print("Private Key:", private_key) # Normally private, only showing for demo
+# Get message from user and encrypt it
+message = input("Enter the message to encrypt: ")
+ciphertext = encrypt(message, public_key)
+print("\nEncrypted message:", ciphertext)
+# Decrypt the message
+decrypted_message = decrypt(ciphertext, private_key)
+print("\nDecrypted message:", decrypted_message)
